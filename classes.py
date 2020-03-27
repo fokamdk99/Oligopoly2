@@ -53,6 +53,7 @@ class Player:
         self.movement = False #zmienna zalezna od serwera: jesli serwer daje info, ze gracz moze
         #sie ruszyc, to wartosc jest zmieniana na True
         self.wait = False
+        self.oferty = [] #oferty negocjacji otrzymane od innych zawodnikow
 
     def create_image(self, color):
         square = {"color":color, "size":40,"coordinates": (self.id*10, self.id*10)}

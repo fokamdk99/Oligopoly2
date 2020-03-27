@@ -22,10 +22,12 @@ class Game:
         self.nieruchomosci = []
         for i in range(40):
             #calkowicie wersja debug ;)
-            if i < 20:
+            if i < 14:
                 self.nieruchomosci.append(["Kasia", 0]) #pierwszy argument to nazwa gracza, drugi to ilosc domkow
-            else:
+            elif i < 28:
                 self.nieruchomosci.append(["Stas", 0])
+            else:
+                self.nieruchomosci.append(["Ola", 0])
 
         return self.nieruchomosci
 

@@ -36,7 +36,7 @@ functionality2_add_settings(s)
 rules_add_settings(s)
 
 from classes import Player
-from functionality2 import manage, show_status, accept_offer, negocjuj, negocjuj_gotowke
+from functionality2 import manage, show_status, accept_offer, negocjuj, negocjuj_gotowke, show_oferta, accept_negocjacje
 from network import Network
 from rules import sprawdz_domki, button_clicked, show_kup_domek, show_sprzedaj_domek, show_zastaw, kup_domek, sprzedaj_domek, zastaw
 
@@ -120,11 +120,6 @@ def show_domki(c):
                     c.win.blit(domek, (c.n[i].x, c.n[i].y + (domek%2)*plus))
 
 #draw window
-'''def draw_window():
-    win.fill(s.win_color)
-    grid = create_grid()
-    draw_grid(grid)'''
-
 def draw_window2(c):
     win.fill(c.win_color)
     grid = create_grid()
@@ -132,51 +127,6 @@ def draw_window2(c):
     #draw_field(c)
 
 #show details about a specific field
-'''def draw_field(c):
-    #central_square = (s.block_size+2, s.block_size+2, 9*s.block_size-3, 9*s.block_size-3)
-    font = pygame.font.SysFont("comicsans", 60)
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    field = None
-
-    #zaktualizuj pola: kto je posiada, ile maja domkow
-    data = {
-        "function":"get_nieruchomosci",
-        "game_name":c.game_name
-    }
-    nieruchomosci = c.network.send(data)
-
-    for i in range(len(c.n)):
-        c.n[i].belongs = nieruchomosci[i][0]
-        c.n[i].domki = nieruchomosci[i][1]
-
-    for i in range(len(s.n)):
-        if (mouse_x >= s.n[i].x and mouse_x <= s.n[i].x + s.block_size) and (mouse_y >= s.n[i].y and mouse_y <= s.n[i].y + s.block_size):
-            field = s.n[i]
-            break
-
-    if field is not None:
-        name = s.font.render(field.name, 1, s.black)
-        if field.belongs is not None:
-            belongs = s.font.render(field.belongs, 1, s.black)
-            czy_domki = sprawdz_domki(field, s)
-            if czy_domki and c.player.interested:
-                show_kup_domek()
-            print("czy domki wynosza:", czy_domki)
-            if field.pledged == True:
-                pledged = s.font.render("zastawione", 1, s.black)
-            else:
-                pledged = s.font.render("nie zastawione", 1, s.black)
-        else:
-            belongs = s.font.render("Jeszcze niezakupione", 1, s.black)
-            pledged = s.font.render("nie zastawione", 1, s.black)
-        
-        value = s.font.render(str(field.value), 1, s.black)
-        pygame.draw.rect(win, (255,255,255), s.central_square)
-        win.blit(name, (s.central_square[0] + s.block_size, s.central_square[1] + s.block_size))
-        win.blit(value, (s.central_square[0] + s.block_size, s.central_square[1] + 3*s.block_size))
-        win.blit(belongs, (s.central_square[0] + s.block_size, s.central_square[1] + 5*s.block_size))
-        win.blit(pledged, (s.central_square[0] + s.block_size, s.central_square[1] + 7*s.block_size))'''
-
 def draw_field2(c):
     if c.rendered_field is not None:
         #print("pole o numerze: ", c.rendered_field)
@@ -271,6 +221,8 @@ def main2():
     s.lista_sprzedazy = []
     s.negocjowana_kwota = ""
     s.kursor = 0
+    s.otrzymane_oferty = 0
+    s.nr_oferty = -1 #przydatne w functionality do ustalenia ktora oferte wyswietlic
     s.clock = pygame.time.Clock()
     #wyswietlaj plansze, kontroluj gracza i wykonywane przez niego czynnosci,
     #aktualizuj dzialania innych graczy
@@ -280,8 +232,16 @@ def main2():
     #do poprawy w wersji ostatecznej
 
     run = True
-    s.player = Player(1, "Stas", (255,0,0), "gierka")
     s.network = Network()
+    #s.player = Player(1, "Stas", (255,0,0), "gierka")
+    data = {
+        "function":"get_players",
+        "game_name": s.game_name
+    }
+    act = s.network.send(data)
+    s.players = act["players"]
+    s.player = s.players[0]
+
     print("odpalam main2")
     initialize_fields()
     
@@ -298,6 +258,23 @@ def main2():
 
     
     while run:
+        data = {
+            "function": "update_players2",
+            "game_name":s.game_name,
+            "name" : s.player.name,
+            "money": s.player.money,
+            "pos": s.player.pos,
+            "x": s.player.x,
+            "y": s.player.y,
+            "interested": s.player.interested,
+            "movement": s.player.movement,
+            "wait": s.player.wait
+        }
+        
+        act = s.network.send(data)
+        s.player = act["player"]
+        #c.players = act["players"] na pozniej
+
         draw_window2(s)
         draw_field2(s)
         #players = functionality2.update_players(network, game_name)
@@ -345,6 +322,8 @@ def mouse_action(player):
     accept_offer(mouse_pos, s)
     rules_show_status(mouse_pos, s)
     negocjuj(mouse_pos, s)
+    show_oferta(mouse_pos, s)
+    accept_negocjacje(mouse_pos, s)
     
     x, y = mouse_pos
     if x >= s.finish_square[0] and x <= s.finish_square[0] + s.finish_square[2] and y >= s.finish_square[1] and y <= s.finish_square[1] + s.finish_square[3]:
