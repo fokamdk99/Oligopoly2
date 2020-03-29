@@ -170,10 +170,10 @@ def accept_offer(mouse_pos, c):
 
     #return juz_sprawdzone
 
-def draw_players(players):
+def draw_players(c, players):
     for i in range(len(players)):
         square = (players[i].x, players[i].y, players[i].image["size"], players[i].image["size"])
-        pygame.draw.rect(win, players[i].image["color"], square)
+        pygame.draw.rect(c.win, players[i].image["color"], square)
 
 def update_players(network, game_name):
     data = {

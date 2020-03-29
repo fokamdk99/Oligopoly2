@@ -50,7 +50,7 @@ class Player:
         #czy chce kupic dana posiadlosc. Dopoki sie nie zdecyduje, nie moze sie ruszyc dalej
         self.juz_kupione = False #zmienna pomocnicza, np. gdy gracz juz cos kupil, ale nadal jest
         #jego ruch
-        self.movement = False #zmienna zalezna od serwera: jesli serwer daje info, ze gracz moze
+        self.movement = True #zmienna zalezna od serwera: jesli serwer daje info, ze gracz moze
         #sie ruszyc, to wartosc jest zmieniana na True
         self.wait = False
         self.oferty = [] #oferty negocjacji otrzymane od innych zawodnikow
@@ -82,16 +82,17 @@ class Player:
     
     #poruszanie sie gracza, zwraca czy gracz sie ruszyl czy nie
     def move2(self, event, c):
-        #self.control_movement(network)
-        print("interested: ", self.interested, ", movement: ", self.movement, ", wait: ", self.wait)
+        #self.control_movement(c.network)
+        #print("interested: ", self.interested, ", movement: ", self.movement, ", wait: ", self.wait)
 
         #if (not self.interested) and self.movement and (not self.wait):
-        if not self.interested:
-            print("move2 dziala poprawnie")
+        #if not self.interested:
+        if self.interested and not self.wait:
+            #print("move2 dziala poprawnie")
             if event.key == pygame.K_UP:
                 value = randint(1,12)
                 self.wait = True
-                self.interested = True
+                #self.interested = True
                 self.juz_sprawdzone = False
                 #sprawdz czy zawodnik przeszedl przez start
                 self.move_engine(value, c)
@@ -99,6 +100,7 @@ class Player:
                 rulebook[c.n[c.player.pos].group](c)
                 
     def control_movement(self, network):
+        #print("control movement funkcja")
         tmp = self.movement
 
         if self.interested == False and self.movement == True:
@@ -107,11 +109,13 @@ class Player:
                 "game_name": self.game_name
             }
             network.send(data)
+            print("player konczy ruch: ", self.name)
         
         data = {
             "function":"get_players",
-            "nazwa": self.game_name
+            "game_name": self.game_name
         }
+        #print("nazwa gry: ", self.game_name)
         act = network.send(data)
         move = act["move"]
         if move == self.id:
@@ -123,7 +127,28 @@ class Player:
         if self.movement != tmp and tmp == True:
             self.wait = False
 
-
+    def control_movement2(self, network):
+    #od teraz movement mowi tylko czy juz wyslalismy serwerowi info, ze gracz skonczyl ruch
+        if self.interested == False and self.movement == False:
+            data = {
+                "function":"next_move",
+                "game_name": self.game_name
+            }
+            network.send(data)
+            print("player konczy ruch: ", self.name)
+            self.movement = True
+            self.wait = False
+        
+        data = {
+            "function":"get_players",
+            "game_name": self.game_name
+        }
+        #print("nazwa gry: ", self.game_name)
+        act = network.send(data)
+        move = act["move"]
+        if move == self.id and self.movement:
+            self.interested = True
+            self.movement = False
 
 def classes_add_settings(c): #c to klasa
     bialy = c.bialy

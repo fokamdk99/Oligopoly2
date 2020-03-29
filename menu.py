@@ -51,6 +51,7 @@ black = gdict["black"]'''
 
 import pygame
 from settings import Settings as s
+from client import main2
 
 pygame.init()
 pygame.font.init()
@@ -95,54 +96,58 @@ full_screen = (0,0,win_width,win_height)
 new_game_btn = (0,0,int(0.1*win_width),win_width)
 okno_poczatkowe_options = ["graj", "wyjdz"]
 connect_to_game_options = ["nowa gra", "wyjdz"]
+s.full_screen = full_screen
+s.new_game_btn = new_game_btn
+s.okno_poczatkowe_options = okno_poczatkowe_options
+s.connect_to_game_options = connect_to_game_options
 
 #stworz te obiekty, ktore pozniej beda wyswietlane w oknie poczatkowym
 def create_menu(options, znacznik):
     choice = []
     for i in range(len(options)):
-        choice.append(font.render(options[i], 1, black))
+        choice.append(s.font.render(options[i], 1, s.black))
     
-    choice[znacznik] = font.render(options[znacznik], 1, zielony)
+    choice[znacznik] = s.font.render(options[znacznik], 1, s.zielony)
     
     return choice
 
 
 #wyswietl obiekty w oknie poczatkowym
 def show_menu(znacznik):
-    title = font.render("Oligopoly", 1, niebieski)
-    choice = create_menu(okno_poczatkowe_options, znacznik)
+    title = s.font.render("Oligopoly", 1, s.niebieski)
+    choice = create_menu(s.okno_poczatkowe_options, znacznik)
 
-    pygame.draw.rect(win, bialy, full_screen)
-    win.blit(title, (200, 100))
+    pygame.draw.rect(win, s.bialy, full_screen)
+    s.win.blit(title, (200, 100))
     for i in range(len(choice)):
-        win.blit(choice[i], (200, (i+1)*200))
+        s.win.blit(choice[i], (200, (i+1)*200))
     
 #wyswietl okno utworzenia nowej gry, zapamietaj i zwroc dane odnosnie tej gry
 def create_new_game(mouse_pos = (1,1)):
     x, y = mouse_pos
-    if x >= new_game_btn[0] and x <= new_game_btn[2] and y >= new_game_btn[1] and y <= new_game_btn[3]:
+    if x >= s.new_game_btn[0] and x <= s.new_game_btn[2] and y >= s.new_game_btn[1] and y <= s.new_game_btn[3]:
         run_create_new_game = True
-        pygame.draw.rect(win, bialy, (0,0,win_width,win_height))
+        pygame.draw.rect(win, s.bialy, (0,0,win_width,win_height))
         wprowadz_nazwe = True
         wprowadz_haslo = False
         wprowadz_ilosc_graczy = False
-        prompt_nazwa = font.render("Wprowadz nazwe",1,black)
-        prompt_haslo = font.render("Wprowadz haslo",1,black)
-        prompt_ilosc_graczy = font.render("Ile osob moze wziac udzial?",1,black)
+        prompt_nazwa = s.font.render("Wprowadz nazwe",1,s.black)
+        prompt_haslo = s.font.render("Wprowadz haslo",1,s.black)
+        prompt_ilosc_graczy = s.font.render("Ile osob moze wziac udzial?",1,s.black)
         context = {}
         name = ""
         
         while run_create_new_game:
-            pygame.draw.rect(win, bialy, (0,0,win_width,win_height))
+            pygame.draw.rect(s.win, s.bialy, (0,0,s.win_width,s.win_height))
             if wprowadz_nazwe:
-                win.blit(prompt_nazwa, (int(0.11*win_width), int(0.09*win_height)))
+                s.win.blit(prompt_nazwa, (int(0.11*s.win_width), int(0.09*s.win_height)))
             elif wprowadz_haslo:
-                win.blit(prompt_haslo, (int(0.11*win_width), int(0.09*win_height)))
+                s.win.blit(prompt_haslo, (int(0.11*s.win_width), int(0.09*s.win_height)))
             else:
-                win.blit(prompt_ilosc_graczy, (int(0.11*win_width), int(0.09*win_height)))
+                s.win.blit(prompt_ilosc_graczy, (int(0.11*s.win_width), int(0.09*s.win_height)))
 
-            tmp = font.render(name, 1, zielony)
-            win.blit(tmp, (int(0.11*win_width), int(0.09*win_height) + 80))
+            tmp = s.font.render(name, 1, s.zielony)
+            s.win.blit(tmp, (int(0.11*s.win_width), int(0.09*s.win_height) + 80))
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -176,13 +181,13 @@ def create_new_game(mouse_pos = (1,1)):
 
 def wait_for_game(ready, player_number, nazwa, n):
     if ready:
-        client.main2(player_number, n, nazwa)
+        main2(player_number, n, nazwa)
     else:
         run_wait_for_game = True
         while run_wait_for_game:
-            pygame.draw.rect(win, bialy, full_screen)
-            czekam = font.render("Czekam na rozpoczecie rozgrywki", 1, black)
-            win.blit(czekam, (10,100))
+            pygame.draw.rect(s.win, s.bialy, s.full_screen)
+            czekam = s.font.render("Czekam na rozpoczecie rozgrywki", 1, s.black)
+            s.win.blit(czekam, (10,100))
             pygame.display.update()
             data = {
                 "function":"ready_check",
@@ -191,7 +196,7 @@ def wait_for_game(ready, player_number, nazwa, n):
             }
             ready = n.send(data)
             if ready:
-                client.main2(player_number, n, nazwa)
+                main2(player_number, n, nazwa)
                 run_wait_for_game = False
 
             for event in pygame.event.get():
@@ -276,12 +281,15 @@ def execute3(znacznik):
 def connect_to_game2():
     znacznik_connect_to_game = 0
     run_connect_to_game = True
-    n = network.Network()
-    signal = n.getP()
+    #n = network.Network()
+    s.network = Network()
+    #signal = n.getP()
+    signal = s.network.getP()
     data = {
         "function":"get_games"
     }
-    games_available = n.send(data)
+    #games_available = n.send(data)
+    games_available = s.network.send(data)
     
     while run_connect_to_game:
         options = []
@@ -296,33 +304,33 @@ def connect_to_game2():
             znacznik_connect_to_game = act["znacznik"]
             execute = act["execute"]
             if execute:
-                act2 = execute4(znacznik_connect_to_game, options, n)
+                act2 = execute4(znacznik_connect_to_game, options, s.network)
                 run_connect_to_game = act2["run"]
                 if "games_available" in act2.keys():
                     games_available = act2["games_available"]
             #rezygnuje z opcji wyboru mysza, mozesz to zakodowac ew. pozniej
 
 def show_connect_to_game(options, znacznik):
-    choose_game = font.render("Dolacz do gry",1,zielony)
-    pygame.draw.rect(win, niebieski, (0,0,win_width, win_height))
-    pygame.draw.rect(win, zolty, new_game_btn)
+    choose_game = font.render("Dolacz do gry",1,s.zielony)
+    pygame.draw.rect(win, s.niebieski, (0,0,win_width, win_height))
+    pygame.draw.rect(win, s.zolty, new_game_btn)
     win.blit(choose_game,(int(0.11*win_width),int(0.09*win_height)))
     if len(options) > 2:
         for i in range(2,len(options)):
             if znacznik == i:
-                win.blit(font.render(options[i],1,zielony), (int(0.11*win_width), int(0.09*win_height + 80*(i+1))))
+                win.blit(font.render(options[i],1,s.zielony), (int(0.11*win_width), int(0.09*win_height + 80*(i+1))))
             else:
-                win.blit(font.render(options[i],1,black), (int(0.11*win_width), int(0.09*win_height + 80*(i+1))))
+                win.blit(font.render(options[i],1,s.black), (int(0.11*win_width), int(0.09*win_height + 80*(i+1))))
     else:
-        win.blit(font.render("brak dostepnych gier", 1, black), (int(0.11*win_width), int(0.09*win_height + 80)))
+        win.blit(font.render("brak dostepnych gier", 1, s.black), (int(0.11*win_width), int(0.09*win_height + 80)))
 
     
-    win.blit(font.render(options[0],1,black), (int(0.11*win_width), int(0.9*win_height)))
-    win.blit(font.render(options[1],1,black), (int(0.6*win_width), int(0.9*win_height)))
+    win.blit(font.render(options[0],1,s.black), (int(0.11*win_width), int(0.9*win_height)))
+    win.blit(font.render(options[1],1,s.black), (int(0.6*win_width), int(0.9*win_height)))
     if znacznik == 0:
-        win.blit(font.render(options[0],1,zielony), (int(0.11*win_width), int(0.9*win_height)))
+        win.blit(font.render(options[0],1,s.zielony), (int(0.11*win_width), int(0.9*win_height)))
     elif znacznik == 1:
-        win.blit(font.render(options[1],1,zielony), (int(0.6*win_width), int(0.9*win_height)))
+        win.blit(font.render(options[1],1,s.zielony), (int(0.6*win_width), int(0.9*win_height)))
     pygame.display.update()
 
 def execute4(znacznik, options, n):
@@ -345,7 +353,8 @@ def execute4(znacznik, options, n):
         }
         #ready = n.send(data)
         print("execute4 przed wyslaniem")
-        act = n.send(data)
+        #act = n.send(data)
+        act = s.network.send(data)
         print("execute4 po wyslaniu")
         ready = act["ready"]
         player_number = act["player_number"]

@@ -82,19 +82,28 @@ except socket.error as e:
 s.listen(2)
 print("waiting for connection, server started")
 
-games = [dev_game]
+#games = [dev_game]
+games = []
 idCount = 0
 
 def get_games(conn, data):
     conn.sendall(pickle.dumps(games))
 
 def create_new_game(conn, data): #data[0] to nazwa, data[1] to haslo, data[2] to ilosc graczy
+    print("create_new_game funkcja")
     global idCount
     global games
     idCount += 1
     game_data = data["game"]
-    game = Game(idCount, game_data["nazwa"], game_data["haslo"], game_data["ilosc_graczy"])
+    print("przed stworzeniem gry")
+    print("nazwa: ", game_data["nazwa"])
+    print("haslo: ", game_data["haslo"])
+    print("ilosc_graczy: ", game_data["ilosc_graczy"])
+    print("kasy_spoleczne: ", kasy_spoleczne)
+    game = Game(idCount, game_data["nazwa"], game_data["haslo"], game_data["ilosc_graczy"], szanse, kasy_spoleczne)
+    print("po stworzeniu gry")
     games.append(game)
+    print("po append")
     conn.sendall(pickle.dumps(games))
 
 def add_player_to_game(conn, data):
@@ -137,16 +146,20 @@ def remove_player_from_game(conn, data):
     conn.sendall(pickle.dumps(deleted))
 
 def get_players(conn, data):
+    #print("get_players funkcja")
     gra = find_game(data["game_name"])
-
+    #print("gra wynosi: ", gra)
     if gra > -1:
         players = games[gra].players
+        #print("player 1 w tej grze to: ", players[1].name)
+        #print("player 0 w tej grze to: ", players[0].name)
         czyj_ruch = games[gra].move
+        #print("czyj ruch: ", czyj_ruch)
         context = {
             "players":players,
             "move":czyj_ruch
         }
-        print("get_players: ruch gracza ", czyj_ruch)
+        #print("get_players: ruch gracza ", czyj_ruch)
         conn.sendall(pickle.dumps(context))
 
 def update_players(conn, data):
@@ -210,10 +223,14 @@ def update_players2(conn, data):
         conn.sendall(pickle.dumps(context))
 
 def next_move(conn, data):
+    #print("next_move funkcja")
+    #print("nazwa gry: ", data["game_name"])
     gra = find_game(data["game_name"])
-
+    #print("gra wynosi: ", gra)
     if gra > -1:
+        #print("w warunku")
         move = games[gra].play()
+        print("move wynosi: ", move)
         conn.sendall(pickle.dumps(move))
 
 def create_players(game):
@@ -223,6 +240,7 @@ def create_players(game):
         name = "Gracz " + str(i)
         index = colors[i]
         #k = i+1
+        print("create_players: nazwa gry to: ", game.name)
         player = Player(i, name, player_colors[index], game.name)
         players.append(player)
 
@@ -362,6 +380,7 @@ function_dict = {
     "ready_check": ready_check,
     "remove_player_from_game": remove_player_from_game,
     "get_players": get_players,
+    "next_move":next_move,
     "update_players": update_players,
     "update_players2": update_players2,
     "szansa":szansa,

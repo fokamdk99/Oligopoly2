@@ -1,7 +1,7 @@
 import pygame
 from settings import Settings as s
 
-pygame.init()
+'''pygame.init()
 pygame.font.init()
 screen_size = pygame.display.Info()
 #win_width = screen_size.current_w
@@ -34,11 +34,12 @@ from rules import rules_add_settings, rules_manage, rules_show_status
 classes_add_settings(s)
 functionality2_add_settings(s)
 rules_add_settings(s)
-
+'''
 from classes import Player
-from functionality2 import manage, show_status, accept_offer, negocjuj, negocjuj_gotowke, show_oferta, accept_negocjacje
+from functionality2 import manage, show_status, accept_offer, negocjuj, negocjuj_gotowke, show_oferta, accept_negocjacje, draw_players
 from network import Network
 from rules import sprawdz_domki, button_clicked, show_kup_domek, show_sprzedaj_domek, show_zastaw, kup_domek, sprzedaj_domek, zastaw
+from rules import rules_manage, rules_show_status
 
 #calculate x and y coordinates for each field
 def initialize_fields():
@@ -96,9 +97,9 @@ def draw_grid(grid):
             
             #print(square)
 
-    for i in range(grid_len):
-        pygame.draw.line(win, (0,0,0),(i*s.block_size,0),(i*s.block_size,s.win_height),3)
-        pygame.draw.line(win, (0,0,0), (0,i*s.block_size),(s.grid_len*s.block_size, i*s.block_size),3)
+    for i in range(s.grid_len):
+        pygame.draw.line(s.win, (0,0,0),(i*s.block_size,0),(i*s.block_size,s.win_height),3)
+        pygame.draw.line(s.win, (0,0,0), (0,i*s.block_size),(s.grid_len*s.block_size, i*s.block_size),3)
 
     central_square = (s.block_size+2, s.block_size+2, 9*s.block_size-3, 9*s.block_size-3)
     pygame.draw.rect(s.win, s.win_color, s.central_square)
@@ -121,7 +122,7 @@ def show_domki(c):
 
 #draw window
 def draw_window2(c):
-    win.fill(c.win_color)
+    c.win.fill(c.win_color)
     grid = create_grid()
     draw_grid(grid)
     #draw_field(c)
@@ -142,11 +143,11 @@ def draw_field2(c):
             pledged = c.font.render("nie zastawione", 1, c.black)
         
         value = c.font.render(str(c.rendered_field.value), 1, c.black)
-        pygame.draw.rect(win, c.bialy, c.central_square)
-        win.blit(name, (c.central_square[0] + c.block_size, c.central_square[1] + c.block_size))
-        win.blit(value, (c.central_square[0] + c.block_size, c.central_square[1] + 3*c.block_size))
-        win.blit(belongs, (c.central_square[0] + c.block_size, c.central_square[1] + 5*c.block_size))
-        win.blit(pledged, (c.central_square[0] + c.block_size, c.central_square[1] + 7*c.block_size))
+        pygame.draw.rect(c.win, c.bialy, c.central_square)
+        c.win.blit(name, (c.central_square[0] + c.block_size, c.central_square[1] + c.block_size))
+        c.win.blit(value, (c.central_square[0] + c.block_size, c.central_square[1] + 3*c.block_size))
+        c.win.blit(belongs, (c.central_square[0] + c.block_size, c.central_square[1] + 5*c.block_size))
+        c.win.blit(pledged, (c.central_square[0] + c.block_size, c.central_square[1] + 7*c.block_size))
 
         #czy_domki = sprawdz_domki(c.rendered_field, c)
         if c.czy_domki and c.player.interested:
@@ -211,8 +212,8 @@ def manage_draw_window(mouse_pos, c):
             
 
 
-def main2():
-    print("right_square to: ", right_square)
+def main2(player_number, n, nazwa):
+    print("right_square to: ", s.right_square)
     print("finish_square to: ", s.finish_square)
     print("player_tab to: ", s.player_tab)
     s.rendered_field = None
@@ -228,11 +229,13 @@ def main2():
     #aktualizuj dzialania innych graczy
 
     #do poprawy w wersji ostatecznej
-    s.game_name="dev_game"
+    #s.game_name="dev_game"
+    s.player_number = player_number
+    s.game_name=nazwa
     #do poprawy w wersji ostatecznej
 
     run = True
-    s.network = Network()
+    #s.network = Network()
     #s.player = Player(1, "Stas", (255,0,0), "gierka")
     data = {
         "function":"get_players",
@@ -240,7 +243,15 @@ def main2():
     }
     act = s.network.send(data)
     s.players = act["players"]
-    s.player = s.players[0]
+    s.player = s.players[s.player_number]
+    '''move = act["move"]
+    if move == s.player.id:
+        s.player.interested = True
+
+    if s.player.interested == True:
+        print("mam ruch")
+    else:
+        print("nie mam ruchu")'''
 
     print("odpalam main2")
     initialize_fields()
@@ -273,6 +284,7 @@ def main2():
         
         act = s.network.send(data)
         s.player = act["player"]
+        s.players = act["players"]
         #c.players = act["players"] na pozniej
 
         draw_window2(s)
@@ -281,6 +293,8 @@ def main2():
         #player = players[player_number]
         #player.control_movement(network)
         s.player.draw_player2(s)
+        draw_players(s, s.players)
+        s.player.control_movement2(s.network)
         #functionality2.draw_players(players)
         manage(s)
         rules_manage(s)
@@ -330,4 +344,4 @@ def mouse_action(player):
         s.player.interested = False
 
 
-main2()
+#main2()
