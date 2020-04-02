@@ -20,8 +20,8 @@ def functionality2_add_settings(c): #c to klasa
     c.player_tab = (c.right_square[0], c.win_height - c.block_size, (c.win_width-c.right_square[0])/3, c.block_size)
     c.negotiations_tab = (c.right_square[0] + (c.win_width-c.right_square[0])/3, c.win_height - c.block_size, (c.win_width-c.right_square[0])/3, c.block_size)
     c.buy_tab = (c.right_square[0] + 2*(c.win_width-c.right_square[0])/3, c.win_height - c.block_size, (c.win_width-c.right_square[0])/3, c.block_size)
-    c.tak_rect = (c.right_square[0] + 2*c.block_size, 3*c.block_size)
-    c.nie_rect = (c.right_square[0] + 4*c.block_size, 3*c.block_size)
+    c.tak_rect = (c.right_square[0] + c.block_size, 6*c.block_size, 4*c.block_size, c.block_size)
+    c.nie_rect = (c.right_square[0] + 5*c.block_size, 6*c.block_size, 4*c.block_size, c.block_size)
     c.finish_square = (c.right_square[0], c.win_height-2*c.block_size, c.win_width-c.right_square[0], c.block_size)
 
     c.wyslij_oferte_rect = (c.right_square[0], c.win_height-3*c.block_size, c.right_square[2] - c.right_square[0], c.block_size)
@@ -51,7 +51,10 @@ def show_manage(c):
     font = pygame.font.SysFont("comicsans", 40)
     pygame.draw.rect(c.win, c.pomaranczowy, c.player_tab)
     pygame.draw.rect(c.win, c.zielony, c.negotiations_tab)
-    pygame.draw.rect(c.win, c.zolty, c.buy_tab)
+    if check_belongs(c.n[c.player.pos], c.player) and c.player.juz_sprawdzone == False:
+        pygame.draw.rect(c.win, c.czerwony, c.buy_tab)
+    else:
+        pygame.draw.rect(c.win, c.zolty, c.buy_tab)
     stan = font.render("moj stan2", 1, c.black)
     negocjacje = font.render("negocjacje", 1, c.black)
     oferty = font.render("oferty", 1, c.black)
@@ -67,8 +70,8 @@ def manage(c):
     show_manage(c)
     
     czy_do_kupienia = check_belongs(premise, c.player)
-    if czy_do_kupienia:
-        pygame.draw.rect(c.win, c.czerwony, c.buy_tab)
+    #if czy_do_kupienia and c.player.juz_sprawdzone == False:
+        #pygame.draw.rect(c.win, c.czerwony, c.buy_tab)
 
     #stan konta gracza
     if flaga == 1:
@@ -135,23 +138,41 @@ def show_money(player,c):
     c.win.blit(money, (c.right_square[0] + 20, c.right_square[1] + 20))
 
 def buy_offer(premise,c):
-    pytanie = c.font.render("Oferta: " + premise.name + " za " + str(premise.value),1,c.black)
-    c.win.blit(pytanie, (c.right_square[0] + c.block_size, 100))
-    pygame.draw.rect(c.win, c.zielony, (c.tak_rect[0], c.tak_rect[1], 100, 50))
-    pygame.draw.rect(c.win, c.czerwony, (c.nie_rect[0], c.nie_rect[1], 100, 50))
+    oferta_text = c.font.render("Oferta:",1,c.black)
+    premise_name_text = c.font.render(premise.name,1,c.black)
+    za_text = c.font.render("za", 1, c.black)
+    ile_text = c.font.render(str(premise.value),1,c.black)
+    c.win.blit(oferta_text, (c.right_square[0] + c.block_size, 2*c.block_size))
+    c.win.blit(premise_name_text, (c.right_square[0] + c.block_size, 3*c.block_size))
+    c.win.blit(za_text, (c.right_square[0] + c.block_size, 4*c.block_size))
+    c.win.blit(ile_text, (c.right_square[0] + c.block_size, 5*c.block_size))
+    pygame.draw.rect(c.win, c.zielony, c.tak_rect)
+    pygame.draw.rect(c.win, c.czerwony, c.nie_rect)
+    tak_text = c.font.render("Akceptuj", 1, c.black)
+    nie_text = c.font.render("Odrzuc", 1, c.black)
+    c.win.blit(tak_text, (c.tak_rect[0] + 10, c.tak_rect[1] + 10))
+    c.win.blit(nie_text, (c.nie_rect[0] + 10, c.nie_rect[1] + 10))
 
 def accept_offer(mouse_pos, c):
+    #print("wchodze do accept_offer: juz_sprawdzone: ", c.player.juz_sprawdzone)
     #global juz_sprawdzone
     global flaga
 
     if flaga == 3 and c.player.interested:
         x, y = mouse_pos
-        tak_rect = (c.right_square[0] + 2*c.block_size, 2*c.block_size)
-        nie_rect = (c.right_square[0] + 4*c.block_size, 2*c.block_size)
-        if x >= c.tak_rect[0] and x <= (c.tak_rect[0] + 100) and y >= c.tak_rect[1] and y <= (c.tak_rect[1] + 50):
+        czy_do_kupienia = check_belongs(c.n[c.player.pos], c.player)
+        #tak_rect = (c.right_square[0] + 2*c.block_size, 2*c.block_size)
+        #nie_rect = (c.right_square[0] + 4*c.block_size, 2*c.block_size)
+        #if x >= c.tak_rect[0] and x <= (c.tak_rect[0] + 100) and y >= c.tak_rect[1] and y <= (c.tak_rect[1] + 50):
+        if rules.button_clicked(mouse_pos, c.tak_rect):
+            #print("functionality2-accept_offer- tekst powinien zniknac")
+            print("functionality2-accept_offer-akceptuj")
+            
+            
             #player.interested = False
             c.player.juz_sprawdzone = True
             c.player.money -= c.n[c.player.pos].value
+            print("c.player.interested: ", c.player.interested, ", c.player.juz_sprawdzone: ", c.player.juz_sprawdzone, ", check_belongs: ", czy_do_kupienia)
             #c.n[c.player.pos].belongs = c.player.name
             data = {
                 "function":"update_nieruchomosci",
@@ -161,10 +182,16 @@ def accept_offer(mouse_pos, c):
                 "domki":0
             }
             c.network.send(data)
+
+            spend_money(c)
             #juz_sprawdzone = True
 
-        elif x >= nie_rect[0] and x <= (nie_rect[0] + 100) and y >= nie_rect[1] and y <= (nie_rect[1] + 50):
+        #elif x >= nie_rect[0] and x <= (nie_rect[0] + 100) and y >= nie_rect[1] and y <= (nie_rect[1] + 50):
+        elif rules.button_clicked(mouse_pos, c.nie_rect):
             c.player.juz_sprawdzone = True
+            print("functionality2-accept_offer-odrzuc")
+            czy_do_kupienia = check_belongs(c.n[c.player.pos], c.player)
+            print("c.player.interested: ", c.player.interested, ", c.player.juz_sprawdzone: ", c.player.juz_sprawdzone, ", check_belongs: ", czy_do_kupienia)
             #player.interested = False
             #juz_sprawdzone = True
 
@@ -368,6 +395,9 @@ def accept_negocjacje(mouse_pos, c):
                 "nr_oferty": c.nr_oferty
             }
             confirm = c.network.send(data)
+            
+            
+            
             update_negocjacje(c)
         elif rules.button_clicked(mouse_pos, c.odrzuc_rect):
             update_negocjacje(c)
@@ -388,3 +418,13 @@ def update_negocjacje(c):
     }
     confirm = c.network.send(data)
     print("confirm")
+
+def spend_money(c):
+    data = {
+            "function":"spend_money",
+            "game_name":c.game_name,
+            "player":c.player.name,
+            "money":c.player.money
+        }
+
+    c.player.money = c.network.send(data)

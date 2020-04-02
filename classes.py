@@ -46,6 +46,7 @@ class Player:
         self.image = self.create_image(color)
         self.x = self.image["coordinates"][0]
         self.y = self.image["coordinates"][1]
+        self.juz_sprawdzone = False
         self.interested = False #zmienna pomocnicza np. gdy gra oczekuje od gracza decyzji,
         #czy chce kupic dana posiadlosc. Dopoki sie nie zdecyduje, nie moze sie ruszyc dalej
         self.juz_kupione = False #zmienna pomocnicza, np. gdy gracz juz cos kupil, ale nadal jest
@@ -98,6 +99,15 @@ class Player:
                 self.move_engine(value, c)
                 
                 rulebook[c.n[c.player.pos].group](c)
+                
+                data = {
+                "function":"spend_money",
+                "game_name":c.game_name,
+                "player":c.player.name,
+                "money":c.player.money
+                }
+
+                c.player.money = c.network.send(data)
                 
     def control_movement(self, network):
         #print("control movement funkcja")
@@ -167,14 +177,14 @@ def classes_add_settings(c): #c to klasa
     n.append(Nieruchomosc("kasa spoleczna","szansa",0,bialy))
     n.append(Ulica(4,20,60,180,320,450,30,"stalowa","ulica",60,brazowy))
     n.append(Nieruchomosc("podatek dochodowy","podatek_dochodowy",0,bialy))
-    n.append(Nieruchomosc("dworzec zachodni","dworzec",200,brazowy))
+    n.append(Nieruchomosc("dworzec zachodni","dworzec",200,bialy, 100))
     n.append(Ulica(6,30,90,270,400,550,50,"radzyminska","ulica",100,niebieski))
     n.append(Nieruchomosc("szansa","szansa",0,bialy))
     n.append(Ulica(6,30,90,270,400,550,50,"jagiellonska","ulica",100,niebieski))
     n.append(Ulica(8,40,100,300,450,600,60,"targowa","ulica",120,niebieski))
-    n.append(Nieruchomosc("wiezenie/odwiedzajacy","wiezienie",0,bialy))
+    n.append(Nieruchomosc("wiezienie/odwiedzajacy","wiezienie",0,bialy))
     n.append(Ulica(10,50,150,450,625,750,70,"plowiecka","ulica",140,rozowy))
-    n.append(Nieruchomosc("elektrownia","elektrownia",0,bialy, 75))
+    n.append(Nieruchomosc("elektrownia","elektrownia",150,bialy, 75))
     n.append(Ulica(10,50,150,450,625,750,70,"marsa","ulica",140,rozowy))
     n.append(Ulica(12,60,180,500,700,900,80,"grochowska","ulica",160,rozowy))
     n.append(Nieruchomosc("dworzec gdanski","dworzec",200,bialy,100))
@@ -190,7 +200,7 @@ def classes_add_settings(c): #c to klasa
     n.append(Nieruchomosc("dworzec wschodni","dworzec",200,bialy,100))
     n.append(Ulica(22,110,330,800,975,1150,130,"swietokrzyska","ulica",260,zolty))
     n.append(Ulica(22,110,330,800,975,1150,130,"krakowskie przedmiescie","ulica",260,zolty))
-    n.append(Nieruchomosc("wodociagi","wodociagi",0,bialy,75))
+    n.append(Nieruchomosc("wodociagi","wodociagi",150,bialy,75))
     n.append(Ulica(24,120,360,850,1025,1200,140,"nowy swiat","ulica",280,zolty))
     n.append(Nieruchomosc("idz do wiezienia","idz_do_wiezienia",0,bialy))
     n.append(Ulica(26,130,390,900,1100,1275,150,"plac trzech krzyzy","ulica",300,zielony))
@@ -217,7 +227,7 @@ n.append(Nieruchomosc("start","start",0,bialy))
     n.append(Nieruchomosc("szansa","szansa",0,bialy))
     n.append(Ulica("jagiellonska","ulica",100,niebieski))
     n.append(Ulica("targowa","ulica",120,niebieski))
-    n.append(Nieruchomosc("wiezenie/odwiedzajacy","wiezienie",0,bialy))
+    n.append(Nieruchomosc("wiezienie/odwiedzajacy","wiezienie",0,bialy))
     n.append(Ulica("plowiecka","ulica",140,rozowy))
     n.append(Nieruchomosc("elektrownia","elektrownia",0,bialy))
     n.append(Ulica("marsa","ulica",140,rozowy))

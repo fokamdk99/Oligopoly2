@@ -5,6 +5,8 @@ from game import Game
 import random
 from classes import Player
 
+licznik = 0
+
 nazwy_nieruchomosci = ["start",
 "konopacka",
 "kasa spoleczna",
@@ -87,7 +89,11 @@ games = []
 idCount = 0
 
 def get_games(conn, data):
-    conn.sendall(pickle.dumps(games))
+    available = []
+    for i in range(len(games)):
+        if games[i].available:
+            available.append(games[i])
+    conn.sendall(pickle.dumps(available))
 
 def create_new_game(conn, data): #data[0] to nazwa, data[1] to haslo, data[2] to ilosc graczy
     print("create_new_game funkcja")
@@ -116,13 +122,19 @@ def add_player_to_game(conn, data):
         ready = games[gra].add_player()
         if ready:
             create_players(games[gra])
+            games[gra].check_availability()
 
         context = {
             "player_number": player_number,
-            "ready": ready
+            "ready": ready,
+            "error": None
+        }
+    else:
+        context = {
+            "error":"nie ma takiej gry"
         }
         
-        conn.sendall(pickle.dumps(context))
+    conn.sendall(pickle.dumps(context))
 
 def ready_check(conn, data):
     gra = find_game(data["nazwa"])
@@ -212,6 +224,7 @@ def update_players2(conn, data):
             #print("wait: ", data["wait"])
             player.wait = data["wait"]
             #print("po update")
+            player.juz_sprawdzone = data["juz_sprawdzone"]
 
         players = games[gra].players
         context = {
@@ -256,16 +269,35 @@ def find_game(nazwa):
     return gra
 
 def szansa(conn, data):
-    szansa_index = dev_game.losuj_szanse()
-    conn.sendall(pickle.dumps(szansa_index))
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        szansa_index = games[gra].losuj_szanse()
+        conn.sendall(pickle.dumps(szansa_index))
 
 def kasa_spoleczna(conn, data):
-    kasa_spoleczna_index = dev_game.losuj_kase()
-    conn.sendall(pickle.dumps(kasa_spoleczna_index))
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        kasa_spoleczna_index = games[gra].losuj_kase()
+        conn.sendall(pickle.dumps(kasa_spoleczna_index))
 
 def ulica(conn, data):
-    nieruchomosc_index = data["nieruchomosc"]
-    beneficjent = nieruchomosci[str(i)][0]
+    print("ulica funkcja")
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        print("w warunku")
+        nieruchomosc_index = data["nieruchomosc"]
+        print("nieruchomosc index: ", nieruchomosc_index)
+        beneficjent = nieruchomosci[nieruchomosc_index][0]
+        print("beneficjent: ", beneficjent)
+        beneficjent = [player for player in games[gra].players if player.name == beneficjent][0]
+        print("beneficjent: ", beneficjent)
+        beneficjent.money += data["kwota"]
+        print("przed wyslaniem")
+        conn.sendall(pickle.dumps("hajs przekazany"))
+    
     #znajdz beneficjenta w danej grze i dodaj mu kwote 
     #odejmij kwote kontrolowanej przez nas postaci
 
@@ -299,9 +331,9 @@ def przeslij_oferte(conn, data):
         print("otrzymujacy oferte to: ", otrzymujacy_oferte)
         if otrzymujacy_oferte is not None:
             print("w warunku")
-            #otrzymujacy_oferte = otrzymujacy_oferte[0]
+            otrzymujacy_oferte = otrzymujacy_oferte[0]
             #wersja debug!!!
-            otrzymujacy_oferte = games[gra].players[0]
+            #otrzymujacy_oferte = games[gra].players[0]
             #wersja debug!!!
             print("nowy otrzymujacy to: ", otrzymujacy_oferte)
             #oferta to: lista z nieruchomosciami, ktore oferujacy chce kupic, lista rzeczy, ktore
@@ -337,8 +369,10 @@ def change_owners(conn, data):
     if gra > -1:
         print("w warunku")
         player = find_player(gra, data["player"])
+        
         print("player to: ", player)
         oferta = player.oferty[data["nr_oferty"]]
+        #oferujacy = find_player(gra, oferta[3])
         print("oferta to: ", oferta)
         #kupno: zmieniamy wlasciciela z 'do kogo' na 'oferujacy'
         for i in range(len(oferta[0])):
@@ -353,14 +387,94 @@ def change_owners(conn, data):
             index = [index for index, elem in enumerate(nazwy_nieruchomosci) if nazwy_nieruchomosci[index] == oferta[1][i]]
             index = index[0]
             games[gra].nieruchomosci[index][0] = player.name
+            
 
         print("po sprzedazy")
 
-        player.money += int(oferta[2])
+        #player.money += int(oferta[2])
+        #oferujacy.money -= int(oferta[2])
 
+        player = [index for index, player in enumerate(games[gra].players) if player.name == data["player"]][0]
+        games[gra].players[player].money += int(oferta[2])
+        print("gracz ma teraz: ", games[gra].players[player].money)
+        oferujacy = [index for index, player in enumerate(games[gra].players) if player.name == oferta[3]][0]
+        games[gra].players[oferujacy].money -= int(oferta[2])
+        print("oferujacy ma teraz: ", games[gra].players[oferujacy].money)
         print("po dodaniu pieniedzy")
 
         conn.sendall(pickle.dumps("Changed owners"))
+
+def update_domki(conn, data):
+    print("update domki funkcja")
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        games[gra].nieruchomosci[data["premise_number"]][1] = data["ilosc_domkow"]
+        print("zmienione")
+        conn.sendall(pickle.dumps("premise updated"))
+
+def end_game(conn, data):
+    print("end game funkcja")
+    gra = find_game(data["game_name"])
+    print("gra to: ", gra)
+
+    if gra > -1:
+        print("w warunku")
+        games[gra].koniec_gry = True
+        games[gra].zrezygnowalo += 1
+        print("zrezygnowalo: ", games[gra].zrezygnowalo)
+        conn.sendall(pickle.dumps("gra zakonczona, koncze rozgrywke"))
+
+def update_money(conn, data):
+    print("update money funkcja")
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        print("w warunku")
+        player = [player for player in games[gra].players if player.name == data["player"]][0]
+        print("player to: ", player)
+        money = player.money
+        print("money to: ", money)
+
+        conn.sendall(pickle.dumps(money))
+
+def spend_money(conn, data):
+    #print("spend money funkcja")
+    gra = find_game(data["game_name"])
+    #print("gra to: ", gra)
+    if gra > -1:
+        #print("w warunku")
+        player = [player for player in games[gra].players if player.name == data["player"]][0]
+        #print("player to: ", player)
+        player.money = data["money"]
+        #print("przed wyslaniem")
+        conn.sendall(pickle.dumps("wyslane"))
+        #print("po wyslaniu")
+
+#zwracaną wartosc przyjmuje pozniej zmienna run_main
+def check_game(conn, data):
+    #print("check game funkcja")
+    gra = find_game(data["game_name"])
+    #print("gra wynosi: ", gra)
+    if gra > -1:
+        #print("w warunku, koniec gry to: ", games[gra].koniec_gry)
+        if games[gra].koniec_gry:
+            conn.sendall(pickle.dumps(False)) 
+        else:
+            conn.sendall(pickle.dumps(True))
+
+def update_name(conn, data):
+    print("update name funkcja")
+    gra = find_game(data["game_name"])
+
+    if gra > -1:
+        print("w warunku")
+        player = [player for player in games[gra].players if player.id == data["id"]][0]
+        print("player to: ", player)
+        player.name = data["name"]
+        print("imie: ", data["name"])
+        conn.sendall(pickle.dumps("nazwa zmieniona"))
+
 
 def find_player(index, name):
     print("find_player funkcja")
@@ -389,7 +503,13 @@ function_dict = {
     "update_nieruchomosci":update_nieruchomosci,
     "przeslij_oferte":przeslij_oferte,
     "update_oferty": update_oferty,
-    "change_owners": change_owners
+    "change_owners": change_owners,
+    "end_game":end_game,
+    "check_game":check_game,
+    "update_domki": update_domki,
+    "update_money":update_money,
+    "spend_money": spend_money,
+    "update_name": update_name
 }
 
 def threaded_client(conn):
@@ -412,6 +532,12 @@ def threaded_client(conn):
     conn.close()
 
 while True:
+    for i in range(len(games)):
+        #games[i].check_availability()
+        remove = games[i].remove_game()
+        if remove:
+            del games[i]
+
     conn, addr = s.accept()
     print("Connected to: ", addr)
     start_new_thread(threaded_client, (conn,))

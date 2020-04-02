@@ -17,20 +17,28 @@ class Game:
         self.kasa_spoleczna = 0
         self.ilosc_kas = kasy_spoleczne
         self.nieruchomosci = self.init_nieruchomosci()
-
+        self.available = True #zmienna kontrolujaca czy dana gre wyswietlac osobom, ktore
+        #chca sie dolaczyc (jesli gra jest juz w trakcie, to nie chcemy jej pokazywac jako
+        # dostepnej, w sensie nie mozna sie juz do niej dolaczyc)
+        self.zrezygnowalo = 0 #zlicza graczy, ktorzy wyszli z gry. Jesli ta liczba jest rowna
+        #calkowitej liczbie graczy, gra jest usuwana z serwera
+        self.koniec_gry = False
+    
     def init_nieruchomosci(self):
         self.nieruchomosci = []
         for i in range(40):
             #calkowicie wersja debug ;)
-            if i < 14:
-                self.nieruchomosci.append(["Kasia", 0]) #pierwszy argument to nazwa gracza, drugi to ilosc domkow
-            elif i < 28:
-                self.nieruchomosci.append(["Stas", 0])
+            self.nieruchomosci.append([None, 0])
+            '''if i < 20:
+                self.nieruchomosci.append(["Gracz 0", 0]) #pierwszy argument to nazwa gracza, drugi to ilosc domkow
             else:
-                self.nieruchomosci.append(["Ola", 0])
+                self.nieruchomosci.append(["Gracz 1", 0])'''
 
         return self.nieruchomosci
 
+    def check_availability(self):
+        if self.number_of_players == len(self.players):
+            self.available = False
 
     def losuj_szanse(self):
         szansa = self.szanse[self.szansa]
@@ -58,6 +66,12 @@ class Game:
 
     def connected(self):
         return self.ready
+
+    def remove_game(self):
+        if self.number_of_players == self.zrezygnowalo:
+            return True
+        else:
+            return False
 
     def winner(self):
         #wybierz zwyciezce gry

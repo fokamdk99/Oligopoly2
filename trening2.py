@@ -38,3 +38,8 @@ chunks = re.split(r'(?<=[,.])(?<!\d.)\s', text)
 print(chunks)
 
 print(-15 % 40)
+
+secik = {1,2,3}
+print(secik)
+secik.add(3)
+print(secik)

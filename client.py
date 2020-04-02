@@ -40,6 +40,7 @@ from functionality2 import manage, show_status, accept_offer, negocjuj, negocjuj
 from network import Network
 from rules import sprawdz_domki, button_clicked, show_kup_domek, show_sprzedaj_domek, show_zastaw, kup_domek, sprzedaj_domek, zastaw
 from rules import rules_manage, rules_show_status
+from api import update_players2
 
 #calculate x and y coordinates for each field
 def initialize_fields():
@@ -63,7 +64,7 @@ def initialize_fields():
             s.n[i].y = ypom
             ypom -= s.block_size
         
-        print(i, " -> ", s.n[i].x, s.n[i].y)
+        #print(i, " -> ", s.n[i].x, s.n[i].y)
 
 
 #sprawdz czy ktos wygral
@@ -143,11 +144,15 @@ def draw_field2(c):
             pledged = c.font.render("nie zastawione", 1, c.black)
         
         value = c.font.render(str(c.rendered_field.value), 1, c.black)
+        ile_domkow = c.font.render("ilosc domkow: " + str(c.rendered_field.domki), 1, c.black)
         pygame.draw.rect(c.win, c.bialy, c.central_square)
         c.win.blit(name, (c.central_square[0] + c.block_size, c.central_square[1] + c.block_size))
-        c.win.blit(value, (c.central_square[0] + c.block_size, c.central_square[1] + 3*c.block_size))
-        c.win.blit(belongs, (c.central_square[0] + c.block_size, c.central_square[1] + 5*c.block_size))
-        c.win.blit(pledged, (c.central_square[0] + c.block_size, c.central_square[1] + 7*c.block_size))
+        if c.rendered_field.group != "szansa" and c.rendered_field.group != "podatek_dochodowy" and c.rendered_field.group != "wiezienie" and c.rendered_field.group != "idz_do_wiezienia" and c.rendered_field.group != "podatek":
+            c.win.blit(value, (c.central_square[0] + c.block_size, c.central_square[1] + 2*c.block_size))
+            c.win.blit(belongs, (c.central_square[0] + c.block_size, c.central_square[1] + 3*c.block_size))
+            c.win.blit(pledged, (c.central_square[0] + c.block_size, c.central_square[1] + 4*c.block_size))
+        if c.rendered_field.group == "ulica":
+            c.win.blit(ile_domkow, (c.central_square[0] + c.block_size, c.central_square[1] + 5*c.block_size))
 
         #czy_domki = sprawdz_domki(c.rendered_field, c)
         if c.czy_domki and c.player.interested:
@@ -205,17 +210,27 @@ def manage_draw_window(mouse_pos, c):
 
         if czy_kup_domek:
             kup_domek(c)
+            #print("manage_draw_window: mickiewicza nr: ", c.n[21].name)
+            #print("manage_draw_window: mickiewicza domki: ", c.n[21].domki)
         if czy_sprzedaj_domek:
             sprzedaj_domek(c)
         if czy_zastaw:
             zastaw(c)
+
+        data = {
+            "function":"spend_money",
+            "game_name":c.game_name,
+            "player":c.player.name,
+            "money":c.player.money
+            }
+
+        c.player.money = c.network.send(data)
             
 
-
 def main2(player_number, n, nazwa):
-    print("right_square to: ", s.right_square)
-    print("finish_square to: ", s.finish_square)
-    print("player_tab to: ", s.player_tab)
+    #print("right_square to: ", s.right_square)
+    #print("finish_square to: ", s.finish_square)
+    #print("player_tab to: ", s.player_tab)
     s.rendered_field = None
     s.czy_domki = False
     s.lista_zakupow = []
@@ -234,7 +249,7 @@ def main2(player_number, n, nazwa):
     s.game_name=nazwa
     #do poprawy w wersji ostatecznej
 
-    run = True
+    s.run_main = True
     #s.network = Network()
     #s.player = Player(1, "Stas", (255,0,0), "gierka")
     data = {
@@ -244,6 +259,18 @@ def main2(player_number, n, nazwa):
     act = s.network.send(data)
     s.players = act["players"]
     s.player = s.players[s.player_number]
+
+    s.player.name = s.nazwa_gracza
+    print("nazwa gracza to: ", s.player.name)
+
+    data = {
+        "function":"update_name",
+        "game_name":s.game_name,
+        "id":s.player.id,
+        "name":s.player.name
+    }
+
+    s.network.send(data)
     '''move = act["move"]
     if move == s.player.id:
         s.player.interested = True
@@ -253,7 +280,7 @@ def main2(player_number, n, nazwa):
     else:
         print("nie mam ruchu")'''
 
-    print("odpalam main2")
+    #print("odpalam main2")
     initialize_fields()
     
     data = {
@@ -264,12 +291,30 @@ def main2(player_number, n, nazwa):
 
     for i in range(len(s.n)):
         s.n[i].belongs = nieruchomosci[i][0]
-        print("wlasnosc: ", nieruchomosci[i][0])
+        #print("wlasnosc: ", nieruchomosci[i][0])
         s.n[i].domki = nieruchomosci[i][1]
 
-    
-    while run:
+    #secik = {-1}
+    while s.run_main:
         data = {
+            "function":"check_game",
+            "game_name":s.game_name
+        }
+
+        s.run_main = s.network.send(data)
+
+        data = {
+            "function":"update_money",
+            "game_name":s.game_name,
+            "player":s.player.name
+            }
+
+        s.player.money = s.network.send(data)
+        #secik.add(s.player.money)
+        #print("pieniadze gracza o nazwie: ", s.player.name, " to: ", s.player.money)
+
+        update_players2(s)
+        '''data = {
             "function": "update_players2",
             "game_name":s.game_name,
             "name" : s.player.name,
@@ -279,12 +324,13 @@ def main2(player_number, n, nazwa):
             "y": s.player.y,
             "interested": s.player.interested,
             "movement": s.player.movement,
-            "wait": s.player.wait
+            "wait": s.player.wait,
+            "juz_sprawdzone":s.player.juz_sprawdzone
         }
         
         act = s.network.send(data)
         s.player = act["player"]
-        s.players = act["players"]
+        s.players = act["players"]'''
         #c.players = act["players"] na pozniej
 
         draw_window2(s)
@@ -305,18 +351,21 @@ def main2(player_number, n, nazwa):
         #narysuj gracza
         #narysuj reszte graczy
         #sprawdz co zrobil gracz(negocjacje, kupno, inne functionality)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-
+        for event in pygame.event.get(): 
             if event.type == pygame.KEYDOWN:
                 keyboard_action(event, s)
 
                 if event.key == pygame.K_ESCAPE:
-                    run = False
+                    s.run_main = False
 
             if event.type == pygame.MOUSEBUTTONUP:
                 mouse_action(s.player)
+
+            if event.type == pygame.QUIT:
+                s.run_main = False
+
+    #print("secik wynosi: ", secik)
+    zakoncz_gre(s)
     
     
 
@@ -345,3 +394,11 @@ def mouse_action(player):
 
 
 #main2()
+
+def zakoncz_gre(c):
+    data = {
+        "function":"end_game",
+        "game_name":c.game_name
+    }
+    output = c.network.send(data)
+    print(output)

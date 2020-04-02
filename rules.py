@@ -17,6 +17,7 @@ class Szansa:
         self.position = position
 
     def action(self, c):
+        print("description: ", self.description)
         print("action: value to: ", self.value, ", position to: ", self.position)
         if self.value is not None:
             c.player.money += self.value
@@ -34,17 +35,17 @@ class Kasa_spoleczna(Szansa):
 def rules_add_settings(c): #c to klasa
     szanse = []
     dworzec_gdanski = find_premise(c,"dworzec gdanski")
-    print("rules_add_settings: dworzec gdanski to: ", dworzec_gdanski)
+    #print("rules_add_settings: dworzec gdanski to: ", dworzec_gdanski)
     szanse.append(Szansa("Przejdz na dworzec gdanski. Jesli miniesz po drodze START, pobierz 200 zl", 0, dworzec_gdanski))
     szanse.append(Szansa("Zaplac za szkole 150 zl.", -150))
     plowiecka = find_premise(c,"plowiecka")
-    print("rules_add_settings: plowiecka to: ", plowiecka)
+    #print("rules_add_settings: plowiecka to: ", plowiecka)
     szanse.append(Szansa("Przejdz na ulice Plowiecka. Jesli miniesz po drodze START, pobierz 200 zl.", 0,plowiecka))
     szanse.append(Szansa("Grzywna. Zaplac 20 zl.", -20))
     szanse.append(Szansa("Mandat za przekroczenie szybkosci. Zaplac 15 zl.", -15))
     szanse.append(Szansa("Przejdz na START.", 0, 0))
     szanse.append(Szansa("Otrzymales kredyt budowlany. Pobierz 150 zl.", 150))
-    wiezienie = find_premise(c, "wiezienie")
+    wiezienie = find_premise(c, "wiezienie/odwiedzajacy")
     #tutaj w razie przejscia przez start naliczy sie 200 zl. co z tym???
     szanse.append(Szansa("Idz do WIEZIENIA. Przejdz prosto do WIEZIENIA. Nie przechodz przez START. Nie pobieraj 200 zl.", 0, wiezienie))
     szanse.append(Szansa("Bank wyplaca Ci dywidende w wysokosci 50 zl.",50))
@@ -79,7 +80,7 @@ def rules_add_settings(c): #c to klasa
     c.sprzedaj_domek_rect = (c.central_square[0] + c.central_square[2]/3, c.central_square[1]+c.central_square[3]-c.block_size, int((c.central_square[0]+c.central_square[2])/3), c.block_size)
 
 def rules_manage(c):
-    if c.n[c.player.pos].group == "szansa" or c.n[c.player.pos].group == "kasa_spoleczna":
+    if c.n[c.player.pos].group == "szansa":# or c.n[c.player.pos].group == "kasa_spoleczna":
         Rules.flaga = True
     if Rules.flaga and Rules.pokaz and (Rules.szansa_index is not None):
         szansa = c.szanse[Rules.szansa_index]
@@ -115,19 +116,22 @@ def ulica(c):
         c.player.money = int(c.player.money - (c.n[c.player.pos].value/4)) '''
     warunek = check_belongs(c)
     if warunek:
+        print("gracz musi zaplacic: ", c.n[c.player.pos].oplaty[c.n[c.player.pos].domki])
         c.player.money -= (c.n[c.player.pos].oplaty[c.n[c.player.pos].domki])
-        '''data = {
+        data = {
             "function":"ulica",
+            "game_name":c.game_name,    
             "kwota":c.n[c.player.pos].oplaty[c.n[c.player.pos].domki],
-            "player":c.player,
+            "player":c.player.name,
             "nieruchomosc":c.player.pos #pozycja gracza; na serwerze wybierasz nieruchomosc o danej
             #pozycji i dodajesz kwote graczowi ktora te posiadlosc nabyl
         }
-        c.network.send(data)'''
+        c.network.send(data)
 
 
 
 def szansa(c):
+    print("rules->szansa funkcja")
     #wylosuj szanse
     '''szansa = random.randrange(2)
     if szansa == 0:
@@ -135,12 +139,15 @@ def szansa(c):
     else:
         c.player.money -= 50'''
     data = {
-        "function": "szansa"
+        "function": "szansa",
+        "game_name":c.game_name
     }
     szansa_index = c.network.send(data)
+    print("szansa_index: ", szansa_index)
     Rules.szansa_index = szansa_index
-    print("szansa: szansa_index to: ", szansa_index)
+    print("Rules.szansa_index: ", Rules.szansa_index)
     Rules.pokaz = True
+    print("Rules.pokaz: ", Rules.pokaz)
     c.szanse[szansa_index].action(c)
     #szansa = c.szanse[szansa_index]
     #show_szansa(szansa, c)
@@ -154,12 +161,15 @@ def kasa_spoleczena(c):
     else:
         c.player.money -= 50'''
     data = {
-        "function": "kasa_spoleczna"
+        "function": "kasa_spoleczna",
+        "game_name":c.game_name
     }
     kasa_spoleczna_index = c.network.send(data)
+    print("kasa_spoleczna_index: ", szansa_index)
     Rules.kasa_spoleczna_index = kasa_spoleczna_index
+    print("Rules.kasa_spoleczna_index: ", Rules.kasa_spoleczna_index)
     Rules.pokaz = True
-    print("kasa_spoleczna: kasa_spoleczna_index to: ", kasa_spoleczna_index)
+    print("Rules.pokaz: ", Rules.pokaz)
     c.kasa_spoleczna[kasa_spoleczna_index].action(c)
 
 def idz_do_wiezienia(c):
@@ -167,7 +177,7 @@ def idz_do_wiezienia(c):
     #trzeci dublet lub dostajesz kare od szansy lub kasy spolecznej
     #to idz do wiezenia
     #c.player.pos = 30 #na 30 miejscu znajduje sie wiezienie
-    value = (30 - c.player.pos) % 40
+    value = (10 - c.player.pos) % 40
     c.player.move_engine(value, c)
 
 def podatek_dochodowy(c):
@@ -238,6 +248,8 @@ def sprawdz_domki(field, c):
                 licznik += 1
 
         if kolor == c.brazowy or kolor == c.fioletowy:
+            print("sprawdz domki funkcja: wybrales brazowy lub fioletowy")
+            print("licznik wynosi: ", licznik)
             if licznik == 2:
                 return True
         elif kolor == c.bialy:
@@ -271,32 +283,60 @@ def show_zastaw(c):
 
 def kup_domek(c):
     #czy_domki = sprawdz_domki(C.rendered_field, c)
+    print("kup domek funkcja")
     czy_domki = c.czy_domki
+    print("kolor domku: ", c.rendered_field.color, ", czy_domki: ", czy_domki)
     if c.rendered_field is not None and czy_domki:
         premises = []
         kolor = c.rendered_field.color
         if kolor != c.bialy:
             for i in range(len(c.n)):
                 if c.n[i].color == kolor and c.n[i].belongs == c.player.name:
-                    premises.append(c.n[i])
+                    #premises.append(c.n[i])
+                    premises.append(i)
+                    #print("nazwa nieruchomosci: ", premises[i].name)
 
             suma = 0
             for i in range(len(premises)):
-                suma += premises[i].domki
-            if len(premises) == 2:
-                if suma % 2 == 0:
-                    premises[0].domki += 1
-                else:
-                    premises[1].domki += 1
+                print("nr nieruchomosci to: ", premises[i])
+                suma += c.n[premises[i]].domki
+            print("suma wynosi: ", suma)
+
+            if c.n[premises[0]].x < c.block_size/2:
+                odejmij = 200
+            elif c.n[premises[0]].y < c.block_size/2:
+                odejmij = 50
+            elif c.n[premises[0]].y > 9*c.block_size/2:
+                odejmij = 150
             else:
-                if suma % 3 == 0:
-                    premises[0].domki += 1
-                elif suma % 3 == 1:
-                    premises[1].domki += 1
-                else:
-                    premises[2].domki += 1
+                odejmij = 100
 
-def sprzedaj_domek(c):
+            print("odejmij wynosi: ", odejmij)
+            if len(premises) == 2:
+                print("brazowy lub fioletowy")
+                #if suma < 10:
+                c.player.money -= odejmij
+                if suma % 2 == 0:
+                    c.n[premises[0]].domki += 1
+                    update_domki(c, premises[0])
+                else:
+                    c.n[premises[1]].domki += 1
+                    update_domki(c, premises[1])
+            else:
+                print("3 sztuki")
+                #if suma < 15:
+                c.player.money -= odejmij
+                if suma % 3 == 0:
+                    c.n[premises[0]].domki += 1
+                    update_domki(c, premises[0])
+                elif suma % 3 == 1:
+                    c.n[premises[1]].domki += 1
+                    update_domki(c, premises[1])
+                else:
+                    c.n[premises[2]].domki += 1
+                    update_domki(c, premises[2])
+
+'''def sprzedaj_domek(c):
     czy_domki = c.czy_domki
     if c.rendered_field is not None and czy_domki:
         premises = []
@@ -309,21 +349,81 @@ def sprzedaj_domek(c):
             suma = 0
             for i in range(len(premises)):
                 suma += premises[i].domki
+                if premises[0].x < c.block_size/2:
+                    odejmij = 200
+                elif premises[0].y < c.block_size/2:
+                    odejmij = 50
+                elif premises[0].y > 9*c.block_size/2:
+                    odejmij = 150
+                else:
+                    odejmij = 100
             if len(premises) == 2:
+                c.player.money += odejmij
                 if suma % 2 == 0:
                     premises[1].domki -= 1
                 else:
                     premises[0].domki -= 1
             else:
+                c.player.money += odejmij
                 if suma % 3 == 0:
                     premises[2].domki -= 1
                 elif suma % 3 == 1:
                     premises[0].domki -= 1
                 else:
-                    premises[1].domki -= 1
+                    premises[1].domki -= 1'''
+
+def sprzedaj_domek(c):
+    print("sprzedaj domek funkcja")
+    czy_domki = c.czy_domki
+    if c.rendered_field is not None and czy_domki:
+        premises = []
+        kolor = c.rendered_field.color
+        if kolor != c.bialy:
+            for i in range(len(c.n)):
+                if c.n[i].color == kolor and c.n[i].belongs == c.player.name:
+                    premises.append(i)
+
+            suma = 0
+            for i in range(len(premises)):
+                suma += c.n[premises[i]].domki
+
+            if c.n[premises[0]].x < c.block_size/2:
+                odejmij = 200
+            elif c.n[premises[0]].y < c.block_size/2:
+                odejmij = 50
+            elif c.n[premises[0]].y > 9*c.block_size/2:
+                odejmij = 150
+            else:
+                odejmij = 100
+
+            print("odejmij wynosi: ", odejmij)
+            if len(premises) == 2:
+                print("brazowy lub fioletowy")
+                #if suma < 10:
+                c.player.money += odejmij
+                if suma % 2 == 0:
+                    c.n[premises[1]].domki -= 1
+                    update_domki(c, premises[1])
+                else:
+                    c.n[premises[0]].domki -= 1
+                    update_domki(c, premises[0])
+            else:
+                print("3 sztuki")
+                #if suma < 15:
+                c.player.money += odejmij
+                if suma % 3 == 0:
+                    c.n[premises[2]].domki -= 1
+                    update_domki(c, premises[2])
+                elif suma % 3 == 1:
+                    c.n[premises[0]].domki -= 1
+                    update_domki(c, premises[0])
+                else:
+                    c.n[premises[1]].domki -= 1
+                    update_domki(c, premises[1])
 
 def zastaw(c):
     if c.rendered_field is not None:
+        #AAAAAAAAAAAAAAA!!! SPRAWDZ TEZ CZY TO NIE JEST SZANSA, KASA SPOLECZNA ETC, WTEDY HIPOTEKA JEST NONE TYPE
         if not c.rendered_field.pledged:
             c.rendered_field.pledged = True
             c.player.money += c.rendered_field.hipoteka
@@ -337,3 +437,12 @@ def button_clicked(mouse_pos, rect):
         return True
     else:
         return False
+
+def update_domki(c, premise_number):
+    data = {
+        "function": "update_domki",
+        "game_name":c.game_name,
+        "premise_number": premise_number,
+        "ilosc_domkow": c.n[premise_number].domki
+    }
+    c.network.send(data)

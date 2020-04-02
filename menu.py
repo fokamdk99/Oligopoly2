@@ -56,11 +56,11 @@ from client import main2
 pygame.init()
 pygame.font.init()
 screen_size = pygame.display.Info()
-#win_width = screen_size.current_w
-#win_height = screen_size.current_h
-win_width = 1100
-win_height = 600
-win = pygame.display.set_mode((win_width,win_height))
+win_width = screen_size.current_w
+win_height = screen_size.current_h
+#win_width = 1100
+#win_height = 600
+win = pygame.display.set_mode((win_width,win_height), pygame.NOFRAME)
 win_rect = (0,0,win_width,win_height)
 grid_len = 11
 block_size = int(win_height/grid_len)
@@ -78,6 +78,7 @@ s.central_square = central_square
 s.right_square = right_square
 s.font = font
 s.small_font = small_font
+s.nazwa_gracza = None
 
 from functionality2 import functionality2_add_settings
 from classes import classes_add_settings
@@ -121,6 +122,30 @@ def show_menu(znacznik):
     s.win.blit(title, (200, 100))
     for i in range(len(choice)):
         s.win.blit(choice[i], (200, (i+1)*200))
+
+def podaj_imie(s):
+    #print("podaj imie funkcja")
+    prompt_nazwa = s.font.render("Wprowadz swoje imie",1,s.black)
+    name = ""
+    run_podaj_imie = True
+    #print("przed petla")
+    while run_podaj_imie and s.nazwa_gracza is None:
+        pygame.draw.rect(win, s.bialy, (0,0,win_width,win_height))
+        s.win.blit(prompt_nazwa, (int(0.11*s.win_width), int(0.09*s.win_height)))
+        tmp = s.font.render(name, 1, s.zielony)
+        s.win.blit(tmp, (int(0.11*s.win_width), int(0.09*s.win_height) + 80))
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.unicode.isalpha() or event.unicode.isnumeric():
+                    name += event.unicode
+                elif event.key == pygame.K_BACKSPACE:
+                    name = name[:-1]
+                elif event.key == pygame.K_RETURN:
+                    if name != "":
+                        s.nazwa_gracza = name
+                        run_podaj_imie = False
     
 #wyswietl okno utworzenia nowej gry, zapamietaj i zwroc dane odnosnie tej gry
 def create_new_game(mouse_pos = (1,1)):
@@ -157,22 +182,22 @@ def create_new_game(mouse_pos = (1,1)):
                     elif event.key == pygame.K_BACKSPACE:
                         name = name[:-1]
                     elif event.key == pygame.K_RETURN:
-                        if wprowadz_nazwe:
+                        if wprowadz_nazwe and name != "":
                             wprowadz_nazwe = False
                             wprowadz_haslo = True
                             context["nazwa"] = name
-                            print("nazwa gry to: ", name)
+                            #print("nazwa gry to: ", name)
                             name = ""
-                        elif wprowadz_haslo:
+                        elif wprowadz_haslo and name != "":
                             wprowadz_haslo = False
                             wprowadz_ilosc_graczy = True
                             context["haslo"] = name
-                            print("haslo gry to: ", name)
+                            #print("haslo gry to: ", name)
                             name = ""
-                        else:
-                            print("przed: ilosc graczy to: ", name)
+                        elif wprowadz_ilosc_graczy and name != "":
+                            #print("przed: ilosc graczy to: ", name)
                             context["ilosc_graczy"] = int(name)
-                            print("ilosc graczy to: ", context["ilosc_graczy"])
+                            #print("ilosc graczy to: ", context["ilosc_graczy"])
                             run_create_new_game = False
 
         return context
@@ -182,6 +207,7 @@ def create_new_game(mouse_pos = (1,1)):
 def wait_for_game(ready, player_number, nazwa, n):
     if ready:
         main2(player_number, n, nazwa)
+        run_wait_for_game = True
     else:
         run_wait_for_game = True
         while run_wait_for_game:
@@ -272,6 +298,7 @@ def execute3(znacznik):
     run = True
     if znacznik == 0:
         #client.main()
+        podaj_imie(s)
         connect_to_game2()
     elif znacznik == 1:
         run = False
@@ -306,8 +333,12 @@ def connect_to_game2():
             if execute:
                 act2 = execute4(znacznik_connect_to_game, options, s.network)
                 run_connect_to_game = act2["run"]
-                if "games_available" in act2.keys():
-                    games_available = act2["games_available"]
+                '''if "games_available" in act2.keys():
+                    games_available = act2["games_available"]'''
+                data = {
+                    "function":"get_games"
+                }
+                games_available = s.network.send(data)
             #rezygnuje z opcji wyboru mysza, mozesz to zakodowac ew. pozniej
 
 def show_connect_to_game(options, znacznik):
@@ -341,8 +372,8 @@ def execute4(znacznik, options, n):
     if znacznik == 0:
         new_game = create_new_game()
         rdict = add_new_game2(new_game, n)
-        games_available = rdict["games_available"]
-        context["games_available"] = games_available
+        #games_available = rdict["games_available"]
+        #context["games_available"] = games_available
     elif znacznik == 1:
         run_connect_to_game = False
         context["run"] = run_connect_to_game
@@ -352,14 +383,17 @@ def execute4(znacznik, options, n):
             "nazwa": options[znacznik]
         }
         #ready = n.send(data)
-        print("execute4 przed wyslaniem")
+        #print("execute4 przed wyslaniem")
         #act = n.send(data)
         act = s.network.send(data)
-        print("execute4 po wyslaniu")
-        ready = act["ready"]
-        player_number = act["player_number"]
-        print("execute4 wchodze w wait")
-        wait_for_game(ready, player_number, options[znacznik], n)
+        #print("execute4 po wyslaniu")
+        if act["error"] is None:
+            ready = act["ready"]
+            player_number = act["player_number"]
+            #print("execute4 wchodze w wait")
+            wait_for_game(ready, player_number, options[znacznik], n)
+        run_connect_to_game = False
+        context["run"] = run_connect_to_game
 
     return context
 
