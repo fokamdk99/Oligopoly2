@@ -234,7 +234,7 @@ def draw_players(c, players):
             pos += 1
             
         #square = (players[i].x, players[i].y, players[i].image["size"], players[i].image["size"])
-        square = (x, y, players[i].image["size"], players[i].image["size"])
+        square = (x + i*10, y + i*10, players[i].image["size"], players[i].image["size"])
         pygame.draw.rect(c.win, players[i].image["color"], square)
 
 def update_players(network, game_name):

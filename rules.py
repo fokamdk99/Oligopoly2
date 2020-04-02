@@ -231,6 +231,8 @@ def show_szansa(szansa, c):
         c.win.blit(line, (c.central_square[0] + 10, c.central_square[1] + 10 + i*c.block_size))
 
     pygame.draw.rect(c.win, c.czerwony, c.close_szansa_rect)
+    zamknij_text = c.font.render("Zamknij", 1, c.bialy)
+    c.win.blit(zamknij_text, (c.central_square[0] + int(c.central_square[2]/2 - 90), c.central_square[1]+c.central_square[3]-c.block_size))
 
 #funkcja sprawdzajaca czy nalezy od playera zabrac hajs (np. czy stanal na czyims polu)
 def check_belongs(c):
