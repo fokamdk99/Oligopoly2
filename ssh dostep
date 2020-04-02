@@ -1,0 +1,4 @@
+htop -> pokazuje procesy serwera
+aby ubic proces, wybierasz dany proces, a nastepnie klikasz F9 oraz enter
+cd ..
+ssh root@172.105.83.53
