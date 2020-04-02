@@ -338,7 +338,7 @@ def main2(player_number, n, nazwa):
         #players = functionality2.update_players(network, game_name)
         #player = players[player_number]
         #player.control_movement(network)
-        s.player.draw_player2(s)
+        #s.player.draw_player2(s)
         draw_players(s, s.players)
         s.player.control_movement2(s.network)
         #functionality2.draw_players(players)

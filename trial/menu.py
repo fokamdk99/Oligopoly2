@@ -61,6 +61,9 @@ if platform.system() == "Windows":
     ctypes.windll.user32.SetProcessDPIAware()
     true_res = (ctypes.windll.user32.GetSystemMetrics(0), ctypes.windll.user32.GetSystemMetrics(1))
     pygame.display.set_mode(true_res)
+    win_width = true_res[0]
+    win_height = true_res[1]
+    win = pygame.display.set_mode((win_width,win_height))
 else:
     screen_size = pygame.display.Info()
     win_width = screen_size.current_w

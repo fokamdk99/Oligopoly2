@@ -294,7 +294,7 @@ def negocjuj(mouse_pos, c):
                 item = c.lista_zakupow[i].name
                 kupno.append(item)
 
-            if len(lista_zakupow) > 0:
+            if len(c.lista_zakupow) > 0:
                 data = {
                     "function":"przeslij_oferte",
                     "game_name":c.game_name,
